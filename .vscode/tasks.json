@@ -1,9 +1,9 @@
 {
     "tasks": [
         {
-            "label": "build",
+            "label": "compile",
             "type": "npm",
-            "script": "build"
+            "script": "compile"
         },
         {
             "label": "watch",

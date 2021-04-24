@@ -36,28 +36,25 @@
     "hardware"
   ],
   "scripts": {
-    "prepare": "yarn build",
+    "prepare": "yarn compile",
     "install": "prebuild-install --runtime napi --verbose || node-gyp rebuild",
     "prebuild": "prebuild --runtime napi -t 4 --force --strip --verbose",
     "clean": "git clean -f -x ./node_modules ./dist ./build ./prebuilds",
-    "build": "tsc",
+    "compile": "tsc",
     "watch": "tsc -w --preserveWatchOutput",
     "test": "mocha --require coffeescript/register --grep Module test/*",
     "full-test": "mocha --require coffeescript/register test/*",
     "valgrind": "coffee -c test/usb.coffee; valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec"
   },
   "dependencies": {
-    "bindings": "^1.5.0",
     "node-addon-api": "^3.1.0",
     "prebuild-install": "^6.1.1"
   },
   "devDependencies": {
-    "@types/bindings": "^1.5.0",
     "@types/node": "^14.14.41",
     "coffeescript": "^2.5.1",
     "mocha": "^8.3.2",
     "prebuild": "^10.0.1",
-    "typedoc": "^0.20.35",
     "typescript": "^4.2.4"
   },
   "binary": {
