@@ -88,16 +88,13 @@ declare module '*usb_bindings' {
         __getConfigDescriptor(): ConfigDescriptor;
         __getAllConfigDescriptors(): ConfigDescriptor[];
         __setConfiguration(desired: number, callback: (error?: LibUSBException) => void): void;
+        __clearHalt(addr: number, callback: (error: undefined | LibUSBException) => void): void;
+        __setInterface(addr: number, altSetting: number, callback: (error?: LibUSBException) => void): void;
         __claimInterface(addr: number): void;
+        __releaseInterface(addr: number, callback: (error?: LibUSBException) => void): void;
         __detachKernelDriver(addr: number): void;
         __attachKernelDriver(addr: number): void;
         __isKernelDriverActive(addr: number): boolean;
-
-        /*
-        Device::InstanceMethod("__clearHalt", &Device::ClearHalt),
-        Device::InstanceMethod("__releaseInterface", &Device::ReleaseInterface),
-        Device::InstanceMethod("__setInterface", &Device::SetInterface),
-        */
 
         /**
          * Open the device.

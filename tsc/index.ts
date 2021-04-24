@@ -23,7 +23,7 @@ if (INIT_ERROR) {
 	console.warn('Failed to initialize libusb.');
 }
 
-const isBuffer = (obj: any): obj is Uint8Array => obj && obj instanceof Uint8Array;
+export const isBuffer = (obj: any): obj is Uint8Array => obj && obj instanceof Uint8Array;
 
 export const findByIds = (vid: number, pid: number): Device | undefined => {
 	const devices = getDeviceList();
