@@ -1,6 +1,6 @@
 assert = require('assert')
 util = require('util')
-usb = require("../usb.js")
+usb = require("./")
 
 if typeof gc is 'function'
 	# running with --expose-gc, do a sweep between tests so valgrind blames the right one
