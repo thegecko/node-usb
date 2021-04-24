@@ -145,3 +145,36 @@ export interface EndpointDescriptor {
      */
     extra: Buffer;
 }
+
+/** A generic representation of a BOS Device Capability descriptor */
+export interface CapabilityDescriptor {
+    /** Size of this descriptor (in bytes) */
+    bLength: number;
+
+    /** Descriptor type. */
+    bDescriptorType: number;
+
+    /** Device Capability type. */
+    bDevCapabilityType: number;
+
+    /** Device Capability data (bLength - 3 bytes) */
+    dev_capability_data: Buffer;
+}
+
+/** A structure representing the Binary Device Object Store (BOS) descriptor */
+export interface BosDescriptor {
+    /** Size of this descriptor (in bytes) */
+    bLength: number;
+
+    /** Descriptor type. */
+    bDescriptorType: number;
+
+    /** Length of this descriptor and all of its sub descriptors. */
+    wTotalLength: number;
+
+    /** The number of separate device capability descriptors in the BOS. */
+    bNumDeviceCaps: number;
+
+    /** Device Capability Descriptors */
+    capabilities: CapabilityDescriptor[];
+}

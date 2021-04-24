@@ -3,15 +3,25 @@ import { Interface } from './interface';
 import {
     Device,
     getDeviceList,
+	INIT_ERROR,
     LibUSBException,
     LIBUSB_CONTROL_SETUP_SIZE,
+	LIBUSB_DT_BOS,
+	LIBUSB_DT_BOS_SIZE,
     LIBUSB_DT_STRING,
     LIBUSB_ENDPOINT_IN,
     LIBUSB_ERROR_NOT_FOUND,
     LIBUSB_REQUEST_GET_DESCRIPTOR,
+	LIBUSB_TRANSFER_STALL,
     LIBUSB_TRANSFER_TYPE_CONTROL,
     Transfer
 } from '../build/Release/usb_bindings';
+import { Capability } from './capability';
+export * from '../build/Release/usb_bindings';
+
+if (INIT_ERROR) {
+	console.warn('Failed to initialize libusb.');
+}
 
 const isBuffer = (obj: any): obj is Uint8Array => obj && obj instanceof Uint8Array;
 
@@ -61,6 +71,24 @@ Object.defineProperty(Device.prototype, 'configDescriptor', {
 	}
 });
 
+Object.defineProperty(Device.prototype, "allConfigDescriptors", {
+	get: function() {
+		try {
+			return this._allConfigDescriptors || (this._allConfigDescriptors = this.__getAllConfigDescriptors())
+		} catch(e) {
+			// Check descriptors exist
+			if (e.errno == LIBUSB_ERROR_NOT_FOUND) return [];
+			throw e;
+		}
+	}
+});
+
+Object.defineProperty(Device.prototype, "parent", {
+	get: function() {
+		return this._parent || (this._parent = this.__getParent())
+	}
+});
+
 Device.prototype.open = function(defaultConfig: boolean): void {
 	this.__open();
 	if (defaultConfig === false) {
@@ -76,6 +104,20 @@ Device.prototype.open = function(defaultConfig: boolean): void {
 Device.prototype.close = function(): void {
 	this.__close();
 	this.interfaces = undefined;
+}
+
+Device.prototype.setConfiguration = function (desired, cb) {
+	const self = this;
+	this.__setConfiguration(desired, function(err) {
+		if (!err) {
+			self.interfaces = []
+			const len = self.configDescriptor ? self.configDescriptor.interfaces.length : 0
+			for (let i = 0; i < len; i ++) {
+				self.interfaces[i] = new Interface(self, i);
+			}
+		}
+		cb.call(self, err)
+	});
 }
 
 Device.prototype.controlTransfer = function(bmRequestType: number, bRequest: number, wValue: number, wIndex: number, data_or_length: number | Buffer,
@@ -96,7 +138,7 @@ Device.prototype.controlTransfer = function(bmRequestType: number, bRequest: num
 
 	// Buffer for the setup packet
 	// http://libusbx.sourceforge.net/api-1.0/structlibusb__control__setup.html
-	var buf = Buffer.alloc(wLength + LIBUSB_CONTROL_SETUP_SIZE)
+	const buf = Buffer.alloc(wLength + LIBUSB_CONTROL_SETUP_SIZE)
 	buf.writeUInt8(   bmRequestType, 0)
 	buf.writeUInt8(   bRequest,      1)
 	buf.writeUInt16LE(wValue,        2)
@@ -107,7 +149,7 @@ Device.prototype.controlTransfer = function(bmRequestType: number, bRequest: num
 		buf.set(data_or_length as Buffer, LIBUSB_CONTROL_SETUP_SIZE)
 	}
 
-	var transfer = new Transfer(this, 0, LIBUSB_TRANSFER_TYPE_CONTROL, this.timeout,
+	const transfer = new Transfer(this, 0, LIBUSB_TRANSFER_TYPE_CONTROL, this.timeout,
 		function(error, buf, actual){
 			if (callback){
 				if (isIn){
@@ -129,9 +171,23 @@ Device.prototype.controlTransfer = function(bmRequestType: number, bRequest: num
 	return this;
 }
 
+Device.prototype.interface = function(addr): Interface | undefined{
+	if (!this.interfaces) {
+		throw new Error("Device must be open before searching for interfaces")
+	}
+	addr = addr || 0
+	for (let i = 0; i < this.interfaces.length; i++){
+		if (this.interfaces[i].interfaceNumber == addr){
+			return this.interfaces[i]
+		}
+	}
+
+	return undefined;
+}
+
 Device.prototype.getStringDescriptor = function(desc_index: number, callback: (error?: LibUSBException, value?: string) => void): void {
-	var langid = 0x0409;
-	var length = 255;
+	const langid = 0x0409;
+	const length = 255;
 	this.controlTransfer(
 		LIBUSB_ENDPOINT_IN,
 		LIBUSB_REQUEST_GET_DESCRIPTOR,
@@ -147,4 +203,96 @@ Device.prototype.getStringDescriptor = function(desc_index: number, callback: (e
 	);
 }
 
-export { getDeviceList } from '../build/Release/usb_bindings';
+Device.prototype.getBosDescriptor = function (callback) {
+	const self = this;
+
+	if (this._bosDescriptor) {
+		// Cached descriptor
+		return callback(undefined, this._bosDescriptor);
+	}
+
+	if (this.deviceDescriptor.bcdUSB < 0x201) {
+		// BOS is only supported from USB 2.0.1
+		return callback(undefined, undefined);
+	}
+
+	this.controlTransfer(
+		LIBUSB_ENDPOINT_IN,
+		LIBUSB_REQUEST_GET_DESCRIPTOR,
+		(LIBUSB_DT_BOS << 8),
+		0,
+		LIBUSB_DT_BOS_SIZE,
+		function (error, buffer) {
+			if (error) {
+				// Check BOS descriptor exists
+				if (error.errno == LIBUSB_TRANSFER_STALL) return callback(undefined, undefined);
+				return callback(error, undefined);
+			}
+
+			if (!buffer) {
+				return callback(undefined, undefined);
+			}
+
+			const totalLength = buffer.readUInt16LE(2);
+			self.controlTransfer(
+				LIBUSB_ENDPOINT_IN,
+				LIBUSB_REQUEST_GET_DESCRIPTOR,
+				(LIBUSB_DT_BOS << 8),
+				0,
+				totalLength,
+				function (error, buffer) {
+					if (error) {
+						// Check BOS descriptor exists
+						if (error.errno == LIBUSB_TRANSFER_STALL) return callback(undefined, undefined);
+						return callback(error, undefined);
+					}
+
+					if (!buffer) {
+						return callback(undefined, undefined);
+					}
+
+					const descriptor: BosDescriptor = {
+						bLength: buffer.readUInt8(0),
+						bDescriptorType: buffer.readUInt8(1),
+						wTotalLength: buffer.readUInt16LE(2),
+						bNumDeviceCaps: buffer.readUInt8(4),
+						capabilities: []
+					};
+
+					let i = LIBUSB_DT_BOS_SIZE;
+					while (i < descriptor.wTotalLength) {
+						const capability = {
+							bLength: buffer.readUInt8(i + 0),
+							bDescriptorType: buffer.readUInt8(i + 1),
+							bDevCapabilityType: buffer.readUInt8(i + 2),
+							dev_capability_data: buffer.slice(i + 3, i + buffer.readUInt8(i + 0))
+						};
+
+						descriptor.capabilities.push(capability);
+						i += capability.bLength;
+					}
+
+					// Cache descriptor
+					self._bosDescriptor = descriptor;
+					callback(undefined, self._bosDescriptor);
+				}
+			);
+		}
+	);
+}
+
+Device.prototype.getCapabilities = function (callback: (error: undefined | LibUSBException, capabilities?: Capability[]) => void): void {
+	const capabilities: Capability[] = [];
+	const self = this;
+
+	this.getBosDescriptor(function(error, descriptor) {
+		if (error) return callback(error, undefined);
+
+		const len = descriptor ? descriptor.capabilities.length : 0
+		for (let i = 0; i < len; i++){
+			capabilities.push(new Capability(self, i))
+		}
+
+		callback(undefined, capabilities);
+	});
+}

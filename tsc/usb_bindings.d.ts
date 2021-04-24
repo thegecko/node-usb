@@ -1,6 +1,15 @@
-declare type Interface = import('./interface').Interface;
+// Type definitions for node-usb 1.5
+// Project: https://github.com/tessel/node-usb
+// Definitions by: Eric Brody <https://github.com/underscorebrody>
+//                 Rob Moran <https://github.com/thegecko>
+// Definitions: https://github.com/borisyankov/DefinitelyTyped
+
 declare type DeviceDescriptor = import('./descriptors').DeviceDescriptor;
 declare type ConfigDescriptor = import('./descriptors').ConfigDescriptor;
+declare type CapabilityDescriptor = import('./descriptors').CapabilityDescriptor;
+declare type BosDescriptor = import('./descriptors').BosDescriptor;
+declare type Interface = import('./interface').Interface;
+declare type Capability = import('./capability').Capability;
 
 declare module '*usb_bindings' {
 
@@ -44,6 +53,9 @@ declare module '*usb_bindings' {
 
     /** Represents a USB device. */
     export class Device {
+        /** Timeout in milliseconds to use for control transfers. */
+        timeout: number;
+
         /** Integer USB device number */
         busNumber: number;
 
@@ -56,41 +68,36 @@ declare module '*usb_bindings' {
         /** Object with properties for the fields of the device descriptor. */
         deviceDescriptor: DeviceDescriptor;
 
-        /** List of Interface objects for the interfaces of the default configuration of the device. */
-        interfaces?: Interface[];
-
         /** Object with properties for the fields of the active configuration descriptor. */
         configDescriptor: ConfigDescriptor;
 
+        /** Contains all config descriptors of the device (same structure as .configDescriptor above) */
+        allConfigDescriptors: ConfigDescriptor[];
+
+        /** Contains the parent of the device, such as a hub. If there is no parent this property is set to `null`. */
+        parent: Device;
+
+        /** List of Interface objects for the interfaces of the default configuration of the device. */
+        interfaces?: Interface[];
+
+        _bosDescriptor?: BosDescriptor;
+
         __open(): void;
         __close(): void;
+        __getParent(): Device;
         __getConfigDescriptor(): ConfigDescriptor;
+        __getAllConfigDescriptors(): ConfigDescriptor[];
+        __setConfiguration(desired: number, callback: (error?: LibUSBException) => void): void;
         __claimInterface(addr: number): void;
         __detachKernelDriver(addr: number): void;
         __attachKernelDriver(addr: number): void;
         __isKernelDriverActive(addr: number): boolean;
 
         /*
-        Device::InstanceMethod("__getParent", &Device::GetParent),
-        Device::InstanceMethod("__getAllConfigDescriptors", &Device::GetAllConfigDescriptors),
         Device::InstanceMethod("__clearHalt", &Device::ClearHalt),
         Device::InstanceMethod("__releaseInterface", &Device::ReleaseInterface),
         Device::InstanceMethod("__setInterface", &Device::SetInterface),
-        Device::InstanceMethod("__setConfiguration", &Device::SetConfiguration),
-        Device::InstanceMethod("__detachKernelDriver", &Device::DetachKernelDriver),
-        Device::InstanceMethod("__attachKernelDriver", &Device::AttachKernelDriver),
         */
-
-        /**
-         * Performs a reset of the device. Callback is called when complete.
-         *
-         * The device must be open to use this method.
-         * @param callback
-         */
-        reset(callback: (error: undefined | LibUSBException) => void): void;
-
-        /** Timeout in milliseconds to use for control transfers. */
-        timeout: number;
 
         /**
          * Open the device.
@@ -106,31 +113,73 @@ declare module '*usb_bindings' {
         close(): void;
 
         /**
-         * Perform a control transfer to retrieve a string descriptor
+         * Return the interface with the specified interface number.
          *
          * The device must be open to use this method.
-         * @param desc_index
-         * @param callback
+         * @param addr
          */
+        interface(addr: number): Interface | undefined;
+
+        /**
+           * Perform a control transfer with `libusb_control_transfer`.
+           *
+           * Parameter `data_or_length` can be an integer length for an IN transfer, or a `Buffer` for an OUT transfer. The type must match the direction specified in the MSB of bmRequestType.
+           *
+           * The `data` parameter of the callback is always undefined for OUT transfers, or will be passed a Buffer for IN transfers.
+           *
+           * The device must be open to use this method.
+           * @param bmRequestType
+           * @param bRequest
+           * @param wValue
+           * @param wIndex
+           * @param data_or_length
+           * @param callback
+           */
+        controlTransfer(bmRequestType: number, bRequest: number, wValue: number, wIndex: number, data_or_length: number | Buffer,
+            callback: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device;
+
+        /**
+        * Perform a control transfer to retrieve a string descriptor
+        *
+        * The device must be open to use this method.
+        * @param desc_index
+        * @param callback
+        */
         getStringDescriptor(desc_index: number, callback: (error: undefined | LibUSBException, data?: string) => void): void;
 
         /**
-         * Perform a control transfer with `libusb_control_transfer`.
-         *
-         * Parameter `data_or_length` can be an integer length for an IN transfer, or a `Buffer` for an OUT transfer. The type must match the direction specified in the MSB of bmRequestType.
-         *
-         * The `data` parameter of the callback is always undefined for OUT transfers, or will be passed a Buffer for IN transfers.
-         *
-         * The device must be open to use this method.
-         * @param bmRequestType
-         * @param bRequest
-         * @param wValue
-         * @param wIndex
-         * @param data_or_length
-         * @param callback
-         */
-        controlTransfer(bmRequestType: number, bRequest: number, wValue: number, wIndex: number, data_or_length: number | Buffer,
-            callback: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device;
+        * Perform a control transfer to retrieve an object with properties for the fields of the Binary Object Store descriptor.
+        *
+        * The device must be open to use this method.
+        * @param callback
+        */
+        getBosDescriptor(callback: (error: undefined | LibUSBException, descriptor?: BosDescriptor) => void): void;
+
+        /**
+        * Retrieve a list of Capability objects for the Binary Object Store capabilities of the device.
+        *
+        * The device must be open to use this method.
+        * @param callback
+        */
+        getCapabilities(callback: (error: undefined | LibUSBException, capabilities?: Capability[]) => void): void;
+
+        /**
+        * Set the device configuration to something other than the default (0). To use this, first call `.open(false)` (which tells it not to auto configure),
+        * then before claiming an interface, call this method.
+        *
+        * The device must be open to use this method.
+        * @param desired
+        * @param callback
+        */
+        setConfiguration(desired: number, callback: (error: undefined | LibUSBException) => void): void;
+
+        /**
+        * Performs a reset of the device. Callback is called when complete.
+        *
+        * The device must be open to use this method.
+        * @param callback
+        */
+        reset(callback: (error: undefined | LibUSBException) => void): void;
     }
 
     /**
