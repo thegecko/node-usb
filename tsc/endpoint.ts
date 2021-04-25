@@ -4,7 +4,7 @@ import { EndpointDescriptor } from './descriptors';
 
 /** Common base for InEndpoint and OutEndpoint. */
 export abstract class Endpoint extends EventEmitter {
-    protected address: number;
+    public address: number;
 
     /** Endpoint direction: `"in"` or `"out"`. */
     public abstract direction: 'in' | 'out';

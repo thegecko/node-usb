@@ -60,36 +60,40 @@ export const findBySerialNumber = async (serialNumber: string): Promise<Device |
 Device.prototype.timeout = 1000;
 
 Object.defineProperty(Device.prototype, 'configDescriptor', {
-	get: function() {
+	get: function(): ConfigDescriptor | undefined {
 		try {
 			return this._configDescriptor || (this._configDescriptor = this.__getConfigDescriptor())
 		} catch(e) {
 			// Check descriptor exists
-			if (e.errno == LIBUSB_ERROR_NOT_FOUND) return null;
+			if (e.errno == LIBUSB_ERROR_NOT_FOUND) {
+				return undefined;
+			}
 			throw e;
 		}
 	}
 });
 
 Object.defineProperty(Device.prototype, "allConfigDescriptors", {
-	get: function() {
+	get: function(): ConfigDescriptor[] {
 		try {
 			return this._allConfigDescriptors || (this._allConfigDescriptors = this.__getAllConfigDescriptors())
 		} catch(e) {
 			// Check descriptors exist
-			if (e.errno == LIBUSB_ERROR_NOT_FOUND) return [];
+			if (e.errno == LIBUSB_ERROR_NOT_FOUND) {
+				return [];
+			}
 			throw e;
 		}
 	}
 });
 
 Object.defineProperty(Device.prototype, "parent", {
-	get: function() {
+	get: function(): Device {
 		return this._parent || (this._parent = this.__getParent())
 	}
 });
 
-Device.prototype.open = function(defaultConfig: boolean): void {
+Device.prototype.open = function(defaultConfig: boolean = true): void {
 	this.__open();
 	if (defaultConfig === false) {
         return;
@@ -106,7 +110,7 @@ Device.prototype.close = function(): void {
 	this.interfaces = undefined;
 }
 
-Device.prototype.setConfiguration = function (desired, cb) {
+Device.prototype.setConfiguration = function(desired: number, callback?: (error: undefined | LibUSBException) => void): void {
 	const self = this;
 	this.__setConfiguration(desired, function(err) {
 		if (!err) {
@@ -116,12 +120,14 @@ Device.prototype.setConfiguration = function (desired, cb) {
 				self.interfaces[i] = new Interface(self, i);
 			}
 		}
-		cb.call(self, err)
+		if (callback) {
+			callback.call(self, err);
+		}
 	});
 }
 
 Device.prototype.controlTransfer = function(bmRequestType: number, bRequest: number, wValue: number, wIndex: number, data_or_length: number | Buffer,
-    callback: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device {
+    callback?: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device {
 	const self = this
 	const isIn = !!(bmRequestType & LIBUSB_ENDPOINT_IN)
 	const wLength = isIn ? data_or_length as number : (data_or_length as Buffer).length;
@@ -151,10 +157,10 @@ Device.prototype.controlTransfer = function(bmRequestType: number, bRequest: num
 
 	const transfer = new Transfer(this, 0, LIBUSB_TRANSFER_TYPE_CONTROL, this.timeout,
 		function(error, buf, actual){
-			if (callback){
-				if (isIn){
+			if (callback) {
+				if (isIn) {
 					callback.call(self, error, buf.slice(LIBUSB_CONTROL_SETUP_SIZE, LIBUSB_CONTROL_SETUP_SIZE + actual))
-				}else{
+				} else {
 					callback.call(self, error)
 				}
 			}
@@ -171,7 +177,7 @@ Device.prototype.controlTransfer = function(bmRequestType: number, bRequest: num
 	return this;
 }
 
-Device.prototype.interface = function(addr): Interface | undefined{
+Device.prototype.interface = function(addr: number): Interface | undefined{
 	if (!this.interfaces) {
 		throw new Error("Device must be open before searching for interfaces")
 	}
@@ -203,7 +209,7 @@ Device.prototype.getStringDescriptor = function(desc_index: number, callback: (e
 	);
 }
 
-Device.prototype.getBosDescriptor = function (callback) {
+Device.prototype.getBosDescriptor = function (callback: (error?: LibUSBException, descriptor?: BosDescriptor) => void): void {
 	const self = this;
 
 	if (this._bosDescriptor) {

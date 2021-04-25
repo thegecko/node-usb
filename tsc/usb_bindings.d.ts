@@ -133,7 +133,7 @@ declare module '*usb_bindings' {
            * @param callback
            */
         controlTransfer(bmRequestType: number, bRequest: number, wValue: number, wIndex: number, data_or_length: number | Buffer,
-            callback: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device;
+            callback?: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device;
 
         /**
         * Perform a control transfer to retrieve a string descriptor
@@ -168,7 +168,7 @@ declare module '*usb_bindings' {
         * @param desired
         * @param callback
         */
-        setConfiguration(desired: number, callback: (error: undefined | LibUSBException) => void): void;
+        setConfiguration(desired: number, callback?: (error: undefined | LibUSBException) => void): void;
 
         /**
         * Performs a reset of the device. Callback is called when complete.
