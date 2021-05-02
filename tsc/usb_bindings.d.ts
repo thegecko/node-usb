@@ -13,9 +13,49 @@ declare type Capability = import('./capability').Capability;
 
 declare module '*usb_bindings' {
 
+    interface events {
+        attach: Device;
+        detach: Device;
+    }
+    
+    export function _enableHotplugEvents(): void;
+    export function _disableHotplugEvents(): void;
+
+    export function addListener<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
+    export function addListener<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
+    export function removeListener<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
+    export function removeListener<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
+    export function on<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
+    export function on<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
+    export function off<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
+    export function off<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
+    export function once<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
+    export function once<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
+    export function listeners<K extends keyof events>(event: K): Function[];
+    export function rawListeners<K extends keyof events>(event: K): Function[];
+    export function removeAllListeners<K extends keyof events>(event?: K): void;
+    export function emit<K extends keyof events>(event: K, arg: events[K]): boolean;
+    export function listenerCount<K extends keyof events>(event: K): number;
+
+    /*
+    export function on(event: 'attach' | 'detach', callback: (device: Device) => void): void;
+    export function on(event: 'newListener' | 'removeListener', callback: (name: string) => void): void;
+*/
+
     export const INIT_ERROR: number;
-    // _enableHotplugEvents
-    // _disableHotplugEvents
+
+    /**
+     * Convenience method to get the first device with the specified VID and PID, or `undefined` if no such device is present.
+     * @param vid
+     * @param pid
+     */
+    export function findByIds(vid: number, pid: number): Device | undefined;
+
+    /**
+     * Convenience method to get the device with the specified serial number, or `undefined` if no such device is present.
+     * @param serialNumber
+     */
+    export function findBySerialNumber(serialNumber: string): Promise<Device | undefined>;
 
     /**
      * Return a list of `Device` objects for the USB devices attached to the system.

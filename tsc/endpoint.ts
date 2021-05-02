@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
-import { Device, LibUSBException, Transfer } from '*usb_bindings';
+import { Device, LibUSBException, Transfer } from '../build/Release/usb_bindings';
 import { EndpointDescriptor } from './descriptors';
+import { isBuffer } from './util';
 
 /** Common base for InEndpoint and OutEndpoint. */
 export abstract class Endpoint extends EventEmitter {
@@ -65,23 +66,21 @@ export class InEndpoint extends Endpoint {
      * @param length
      * @param callback
      */
-    /*
     public transfer(length: number, callback: (error: undefined | LibUSBException, data?: Buffer) => void): InEndpoint {
         var self = this
         var buffer = Buffer.alloc(length)
     
-        function callback(error, buf, actual){
-            cb.call(self, error, buffer.slice(0, actual))
+        function cb(error: undefined | LibUSBException, _buffer?: Buffer, actualLength?: number){
+            callback.call(self, error, buffer.slice(0, actualLength))
         }
     
         try {
-            this.makeTransfer(this.timeout, callback).submit(buffer)
+            this.makeTransfer(this.timeout, cb).submit(buffer)
         } catch (e) {
-            process.nextTick(function() { cb.call(self, e); });
+            process.nextTick(function() { callback.call(self, e); });
         }
         return this;
     }
-    */
 
     /**
      * Start polling the endpoint.
@@ -195,23 +194,22 @@ export class OutEndpoint extends Endpoint {
      * @param buffer
      * @param callback
      */
-    /*
-    public transfer(buffer: Buffer, cb?: (error: undefined | LibUSBException) => void): OutEndpoint {
+    public transfer(buffer: Buffer, callback?: (error: undefined | LibUSBException) => void): OutEndpoint {
         var self = this
         if (!buffer){
             buffer = Buffer.alloc(0)
-        }else if (!isBuffer(buffer)){
+        } else if (!isBuffer(buffer)){
             buffer = Buffer.from(buffer)
         }
     
-        function callback(error: undefined | LibUSBException, buf: Buffer, actual){
-            if (cb) cb.call(self, error)
+        function cb(error: undefined | LibUSBException){
+            if (callback) callback.call(self, error)
         }
     
         try {
-            this.makeTransfer(this.timeout, callback).submit(buffer);
+            this.makeTransfer(this.timeout, cb).submit(buffer);
         } catch (e) {
-            process.nextTick(function() { callback(e); });
+            process.nextTick(function() { cb(e); });
         }
     
         return this;
@@ -225,5 +223,4 @@ export class OutEndpoint extends Endpoint {
             this.transfer(buffer, callback);
         }
     }
-    */
 }

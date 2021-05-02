@@ -1,4 +1,4 @@
-import { Device, LibUSBException, LIBUSB_ENDPOINT_IN } from "*usb_bindings";
+import { Device, LibUSBException, LIBUSB_ENDPOINT_IN } from '../build/Release/usb_bindings';
 import { InterfaceDescriptor } from "./descriptors";
 import { Endpoint, InEndpoint, OutEndpoint } from "./endpoint";
 
@@ -25,7 +25,7 @@ export class Interface {
         this.endpoints = []
         var len = this.descriptor.endpoints.length
         for (var i=0; i<len; i++){
-            var desc = this.descriptor.endpoints[i]
+            var desc = this.descriptor.endpoints[i];
             var c = (desc.bEndpointAddress & LIBUSB_ENDPOINT_IN) ? InEndpoint : OutEndpoint;
             this.endpoints[i] = new c(this.device, desc)
         }
