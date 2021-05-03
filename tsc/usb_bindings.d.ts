@@ -81,7 +81,7 @@ declare module '*usb_bindings' {
          *
          * @param buffer Buffer where data will be written (for IN transfers) or read from (for OUT transfers).
          */
-        submit(buffer: Buffer): Transfer;
+        submit(buffer: Buffer, callback?: (error: undefined | LibUSBException, buffer: Buffer, actualLength: number) => void): Transfer;
 
         /**
          * Cancel the transfer.

@@ -23,10 +23,10 @@ export class Interface {
         this.descriptor = this.device.configDescriptor.interfaces[this.id][this.altSetting]
         this.interfaceNumber = this.descriptor.bInterfaceNumber
         this.endpoints = []
-        var len = this.descriptor.endpoints.length
-        for (var i=0; i<len; i++){
-            var desc = this.descriptor.endpoints[i];
-            var c = (desc.bEndpointAddress & LIBUSB_ENDPOINT_IN) ? InEndpoint : OutEndpoint;
+        const len = this.descriptor.endpoints.length
+        for (let i=0; i<len; i++){
+            const desc = this.descriptor.endpoints[i];
+            const c = (desc.bEndpointAddress & LIBUSB_ENDPOINT_IN) ? InEndpoint : OutEndpoint;
             this.endpoints[i] = new c(this.device, desc)
         }
     }
@@ -72,13 +72,12 @@ export class Interface {
             callback = closeEndpointsOrCallback;
         }
 
-        var self = this;        
+        const self = this;        
         if (!closeEndpoints || this.endpoints.length == 0) {
             next();
         } else {
-            var n = self.endpoints.length;
-            self.endpoints.forEach(function (_ep) {
-                /*
+            let n = self.endpoints.length;
+            self.endpoints.forEach(function (ep) {
                 if (ep.direction === 'in' && (ep as InEndpoint).pollActive) {
                     ep.once('end', function () {
                         if (--n == 0) {
@@ -87,11 +86,10 @@ export class Interface {
                     });
                     (ep as InEndpoint).stopPoll();
                 } else {
-                    */
                     if (--n == 0) {
                         next();
                     }
-                //}
+                }
             });
         }
         
@@ -143,7 +141,7 @@ export class Interface {
      * @param callback
      */
     public setAltSetting(altSetting: number, callback?: (error: undefined | LibUSBException) => void): void {
-        var self = this;
+        const self = this;
         this.device.__setInterface(this.id, altSetting, function(err){
             if (!err){
                 self.altSetting = altSetting;

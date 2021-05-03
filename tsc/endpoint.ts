@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { Device, LibUSBException, Transfer } from '../build/Release/usb_bindings';
+import { Device, LibUSBException, LIBUSB_TRANSFER_CANCELLED, Transfer } from '../build/Release/usb_bindings';
 import { EndpointDescriptor } from './descriptors';
 import { isBuffer } from './util';
 
@@ -40,13 +40,18 @@ export abstract class Endpoint extends EventEmitter {
      * @param timeout Timeout for the transfer (0 means unlimited).
      * @param callback Transfer completion callback.
      */
-    public makeTransfer(timeout: number, callback: (error: undefined | LibUSBException, buffer?: Buffer, actualLength?: number) => void): Transfer {
+    public makeTransfer(timeout: number, callback: (error: undefined | LibUSBException, buffer: Buffer, actualLength: number) => void): Transfer {
         return new Transfer(this.device, this.address, this.transferType, timeout, callback);
     }
 }
 
 /** Endpoints in the IN direction (device->PC) have this type. */
 export class InEndpoint extends Endpoint {
+
+    protected pollTransfers: Transfer[] | undefined;
+    protected pollTransferSize = 0;
+    protected pollPending = 0;
+    public pollActive = false;
 
     /** Endpoint direction. */
     public direction: 'in' | 'out' = 'in';
@@ -67,17 +72,17 @@ export class InEndpoint extends Endpoint {
      * @param callback
      */
     public transfer(length: number, callback: (error: undefined | LibUSBException, data?: Buffer) => void): InEndpoint {
-        var self = this
-        var buffer = Buffer.alloc(length)
-    
-        function cb(error: undefined | LibUSBException, _buffer?: Buffer, actualLength?: number){
+        const self = this
+        const buffer = Buffer.alloc(length)
+
+        function cb(error: undefined | LibUSBException, _buffer?: Buffer, actualLength?: number) {
             callback.call(self, error, buffer.slice(0, actualLength))
         }
-    
+
         try {
             this.makeTransfer(this.timeout, cb).submit(buffer)
         } catch (e) {
-            process.nextTick(function() { callback.call(self, e); });
+            process.nextTick(function () { callback.call(self, e); });
         }
         return this;
     }
@@ -92,61 +97,64 @@ export class InEndpoint extends Endpoint {
      * @param nTransfers
      * @param transferSize
      */
-    /*
     public startPoll(nTransfers?: number, transferSize?: number): void {
-        var self = this
-        this.pollTransfers = this.poll(nTransfers, transferSize, transferDone)
-    
-        function transferDone(error, buf, actual){
-            if (!error){
-                self.emit("data", buf.slice(0, actual))
-            }else if (error.errno != usb.LIBUSB_TRANSFER_CANCELLED){
+        const self = this
+        this.pollTransfers = this.poll(nTransfers || 3, transferSize || this.descriptor.wMaxPacketSize, transferDone);
+
+        function transferDone(error: undefined | LibUSBException, buffer: Buffer, actualLength: number, transfer: Transfer) {
+            if (!error) {
+                self.emit("data", buffer.slice(0, actualLength))
+            } else if (error.errno != LIBUSB_TRANSFER_CANCELLED) {
                 self.emit("error", error)
                 self.stopPoll()
             }
-    
-            if (self.pollActive){
-                startTransfer(this)
-            }else{
+
+            if (self.pollActive) {
+                startTransfer(transfer);
+            } else {
                 self.pollPending--
-    
-                if (self.pollPending == 0){
-                    delete self.pollTransfers;
+
+                if (self.pollPending == 0) {
+                    self.pollTransfers = [];
                     self.emit('end')
                 }
             }
         }
-    
-        function startTransfer(t){
+
+        function startTransfer(transfer: Transfer) {
             try {
-                t.submit(Buffer.alloc(self.pollTransferSize), transferDone);
+                transfer.submit(Buffer.alloc(self.pollTransferSize), (error: undefined | LibUSBException, buffer: Buffer, actualLength: number) => {
+                    transferDone(error, buffer, actualLength, transfer);
+                });
             } catch (e) {
-                self.emit("error", e);
+                self.emit('error', e);
                 self.stopPoll();
             }
         }
-    
-        this.pollTransfers.forEach(startTransfer)
-        self.pollPending = this.pollTransfers.length
+
+        this.pollTransfers.forEach(startTransfer);
+        self.pollPending = this.pollTransfers.length;
     }
 
-    private poll(nTransfers?: number, transferSize?: number, callback): void {
-        if (this.pollTransfers){
-            throw new Error("Polling already active")
+    private poll(nTransfers: number, transferSize: number, callback: (error: undefined | LibUSBException, buffer: Buffer, actualLength: number, transfer: Transfer) => void): Transfer[] {
+        if (this.pollTransfers) {
+            throw new Error('Polling already active');
         }
-    
-        nTransfers = nTransfers || 3;
-        this.pollTransferSize = transferSize || this.descriptor.wMaxPacketSize;
+
+        this.pollTransferSize = transferSize;
         this.pollActive = true
         this.pollPending = 0
-    
-        var transfers = []
-        for (var i=0; i<nTransfers; i++){
-            transfers[i] = this.makeTransfer(0, callback)
+
+        const transfers: Transfer[] = []
+        for (let i = 0; i < nTransfers; i++) {
+            const transfer = this.makeTransfer(0, (error: undefined | LibUSBException, buffer: Buffer, actualLength: number) => {
+                callback(error, buffer, actualLength, transfer);
+            });
+            transfers[i] = transfer;
         }
         return transfers;
     }
-*/
+
     /**
      * Stop polling.
      *
@@ -155,12 +163,11 @@ export class InEndpoint extends Endpoint {
      * The device must be open to use this method.
      * @param callback
      */
-    /*
     public stopPoll(callback?: () => void): void {
         if (!this.pollTransfers) {
             throw new Error('Polling is not active.');
         }
-        for (var i=0; i<this.pollTransfers.length; i++){
+        for (let i = 0; i < this.pollTransfers.length; i++) {
             try {
                 this.pollTransfers[i].cancel()
             } catch (err) {
@@ -168,9 +175,8 @@ export class InEndpoint extends Endpoint {
             }
         }
         this.pollActive = false
-        if (cb) this.once('end', cb);
+        if (callback) this.once('end', callback);
     }
-    */
 }
 
 /** Endpoints in the OUT direction (PC->device) have this type. */
@@ -195,23 +201,23 @@ export class OutEndpoint extends Endpoint {
      * @param callback
      */
     public transfer(buffer: Buffer, callback?: (error: undefined | LibUSBException) => void): OutEndpoint {
-        var self = this
-        if (!buffer){
+        const self = this
+        if (!buffer) {
             buffer = Buffer.alloc(0)
-        } else if (!isBuffer(buffer)){
+        } else if (!isBuffer(buffer)) {
             buffer = Buffer.from(buffer)
         }
-    
-        function cb(error: undefined | LibUSBException){
+
+        function cb(error: undefined | LibUSBException) {
             if (callback) callback.call(self, error)
         }
-    
+
         try {
             this.makeTransfer(this.timeout, cb).submit(buffer);
         } catch (e) {
-            process.nextTick(function() { cb(e); });
+            process.nextTick(function () { cb(e); });
         }
-    
+
         return this;
     }
 
