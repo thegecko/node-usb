@@ -37,11 +37,6 @@ declare module '*usb_bindings' {
     export function emit<K extends keyof events>(event: K, arg: events[K]): boolean;
     export function listenerCount<K extends keyof events>(event: K): number;
 
-    /*
-    export function on(event: 'attach' | 'detach', callback: (device: Device) => void): void;
-    export function on(event: 'newListener' | 'removeListener', callback: (name: string) => void): void;
-*/
-
     export const INIT_ERROR: number;
 
     /**
@@ -118,8 +113,9 @@ declare module '*usb_bindings' {
         parent: Device;
 
         /** List of Interface objects for the interfaces of the default configuration of the device. */
-        interfaces?: Interface[];
+        interfaces: Interface[];
 
+        _interfaces?: Interface[];
         _bosDescriptor?: BosDescriptor;
 
         __open(): void;
@@ -155,23 +151,23 @@ declare module '*usb_bindings' {
          * The device must be open to use this method.
          * @param addr
          */
-        interface(addr: number): Interface | undefined;
+        interface(addr: number): Interface;
 
         /**
-           * Perform a control transfer with `libusb_control_transfer`.
-           *
-           * Parameter `data_or_length` can be an integer length for an IN transfer, or a `Buffer` for an OUT transfer. The type must match the direction specified in the MSB of bmRequestType.
-           *
-           * The `data` parameter of the callback is always undefined for OUT transfers, or will be passed a Buffer for IN transfers.
-           *
-           * The device must be open to use this method.
-           * @param bmRequestType
-           * @param bRequest
-           * @param wValue
-           * @param wIndex
-           * @param data_or_length
-           * @param callback
-           */
+         * Perform a control transfer with `libusb_control_transfer`.
+         *
+         * Parameter `data_or_length` can be an integer length for an IN transfer, or a `Buffer` for an OUT transfer. The type must match the direction specified in the MSB of bmRequestType.
+         *
+         * The `data` parameter of the callback is always undefined for OUT transfers, or will be passed a Buffer for IN transfers.
+         *
+         * The device must be open to use this method.
+         * @param bmRequestType
+         * @param bRequest
+         * @param wValue
+         * @param wIndex
+         * @param data_or_length
+         * @param callback
+         */
         controlTransfer(bmRequestType: number, bRequest: number, wValue: number, wIndex: number, data_or_length: number | Buffer,
             callback?: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device;
 

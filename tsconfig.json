@@ -1,10 +1,6 @@
 {
     "compilerOptions": {
         "target": "es5",
-        "lib": [
-            "es5",
-            "es2015.promise"
-        ],
         "strict": true,
         "downlevelIteration": true,
         "noImplicitReturns": true,

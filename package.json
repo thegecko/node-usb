@@ -47,6 +47,7 @@
     "valgrind": "coffee -c test/usb.coffee; valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec"
   },
   "dependencies": {
+    "@types/w3c-web-usb": "^1.0.4",
     "node-addon-api": "^3.1.0",
     "prebuild-install": "^6.1.1"
   },

@@ -81,21 +81,31 @@ Object.defineProperty(usb.Device.prototype, "parent", {
 	}
 });
 
+Object.defineProperty(usb.Device.prototype, "interfaces", {
+	get: function (): Interface[] {
+		if (!this._interfaces) {
+			throw new Error("Device must be open before listing interfaces");
+		}
+
+		return this._interfaces;
+	}
+});
+
 usb.Device.prototype.open = function (defaultConfig: boolean = true): void {
 	this.__open();
 	if (defaultConfig === false) {
 		return;
 	}
-	this.interfaces = []
+	this._interfaces = []
 	const len = this.configDescriptor ? this.configDescriptor.interfaces.length : 0;
 	for (let i = 0; i < len; i++) {
-		this.interfaces[i] = new Interface(this, i)
+		this._interfaces[i] = new Interface(this, i)
 	}
 };
 
 usb.Device.prototype.close = function (): void {
 	this.__close();
-	this.interfaces = undefined;
+	this._interfaces = undefined;
 }
 
 usb.Device.prototype.setConfiguration = function (desired: number, callback?: (error: undefined | usb.LibUSBException) => void): void {
@@ -165,18 +175,19 @@ usb.Device.prototype.controlTransfer = function (bmRequestType: number, bRequest
 	return this;
 }
 
-usb.Device.prototype.interface = function (addr: number): Interface | undefined {
-	if (!this.interfaces) {
-		throw new Error("Device must be open before searching for interfaces")
+usb.Device.prototype.interface = function (addr: number): Interface {
+	if (!this._interfaces) {
+		throw new Error("Device must be open before searching for interfaces");
 	}
+
 	addr = addr || 0
-	for (let i = 0; i < this.interfaces.length; i++) {
-		if (this.interfaces[i].interfaceNumber == addr) {
-			return this.interfaces[i]
+	for (let i = 0; i < this._interfaces.length; i++) {
+		if (this._interfaces[i].interfaceNumber == addr) {
+			return this._interfaces[i]
 		}
 	}
 
-	return undefined;
+	throw new Error(`Interface not found for address: ${addr}`);
 }
 
 usb.Device.prototype.getStringDescriptor = function (desc_index: number, callback: (error?: usb.LibUSBException, value?: string) => void): void {
