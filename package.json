@@ -44,7 +44,8 @@
     "watch": "tsc -w --preserveWatchOutput",
     "test": "mocha --require coffeescript/register --grep Module test/*",
     "full-test": "mocha --require coffeescript/register test/*",
-    "valgrind": "coffee -c test/usb.coffee; valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec"
+    "valgrind": "coffee -c test/usb.coffee; valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
+    "docs": "typedoc"
   },
   "dependencies": {
     "@types/w3c-web-usb": "^1.0.4",
@@ -56,6 +57,7 @@
     "coffeescript": "^2.5.1",
     "mocha": "^8.3.2",
     "prebuild": "^10.0.1",
+    "typedoc": "^0.20.36",
     "typescript": "^4.2.4"
   },
   "binary": {
