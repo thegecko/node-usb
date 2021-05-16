@@ -1,4 +1,3 @@
-import { platform } from 'process';
 import { promisify } from 'util';
 import { Endpoint, InEndpoint, OutEndpoint } from './endpoint';
 import {
@@ -22,7 +21,6 @@ const LIBUSB_TRANSFER_TYPE_MASK = 0x03;
 const ENDPOINT_NUMBER_MASK = 0x7f;
 const CLEAR_FEATURE = 0x01;
 const ENDPOINT_HALT = 0x00;
-const IS_LINUX = platform === 'linux';
 
 /**
  * A mutex implementation that can be used to lock access between concurrent async functions
@@ -66,9 +64,9 @@ class Mutex {
 /**
  * Wrapper to make a node-usb device look like a webusb device
  */
-export class WebUsbDevice implements USBDevice {
-    public static async createInstance(device: Device): Promise<WebUsbDevice> {
-        const instance = new WebUsbDevice(device);
+export class WebUSBDevice implements USBDevice {
+    public static async createInstance(device: Device): Promise<WebUSBDevice> {
+        const instance = new WebUSBDevice(device);
         await instance.initialise();
         return instance;
     }
@@ -444,12 +442,6 @@ export class WebUsbDevice implements USBDevice {
             this.productName = await this.getStringDescriptor(this.device.deviceDescriptor.iProduct);
             this.serialNumber = await this.getStringDescriptor(this.device.deviceDescriptor.iSerialNumber);
             this.configurations = await this.getConfigurations();
-        } catch (e) {
-            if (e.message === 'LIBUSB_ERROR_ACCESS' && IS_LINUX) {
-                throw new Error('Unale to access device, please check udev rules');
-            } else {
-                throw e;
-            }
         } finally {
             this.device.close();
             this.deviceMutex.unlock();
