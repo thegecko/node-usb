@@ -38,6 +38,7 @@ declare module '*usb_bindings' {
     export function listenerCount<K extends keyof events>(event: K): number;
 
     export const INIT_ERROR: number;
+    export let webusb: USB;
 
     /**
      * Convenience method to get the first device with the specified VID and PID, or `undefined` if no such device is present.
