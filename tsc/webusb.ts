@@ -124,10 +124,6 @@ export class WebUSB extends (EventDispatcher as new() => TypedDispatcher<USBEven
         // Refresh devices and filter for allowed ones
         let devices = await this.loadDevices(preFilters);
         devices = devices.filter(device => {
-            if (!device.opened) {
-                return false;
-            }
-
             for (const i in this.allowedDevices) {
                 if (this.isSameDevice(device, this.allowedDevices[i])) {
                     return true;

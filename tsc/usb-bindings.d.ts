@@ -114,9 +114,8 @@ declare module '*usb_bindings' {
         parent: Device;
 
         /** List of Interface objects for the interfaces of the default configuration of the device. */
-        interfaces: Interface[];
+        interfaces?: Interface[];
 
-        _interfaces?: Interface[];
         _bosDescriptor?: BosDescriptor;
 
         __open(): void;

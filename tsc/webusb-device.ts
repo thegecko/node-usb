@@ -522,6 +522,10 @@ export class WebUSBDevice implements USBDevice {
     }
 
     private getEndpoint(address: number): Endpoint | undefined {
+        if (!this.device.interfaces) {
+            return undefined;
+        }
+
         for (const iface of this.device.interfaces) {
             const endpoint = iface.endpoint(address);
             if (endpoint) {
