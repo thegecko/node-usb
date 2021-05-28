@@ -33,7 +33,7 @@ jobs:
         with:
           submodules: recursive
       - run: yarn
-      - run: npm run prebuild -- -a ${{ matrix.config.arch }}
+      - run: yarn run prebuild -- -a ${{ matrix.config.arch }}
       - if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         env:
