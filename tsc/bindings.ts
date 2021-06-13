@@ -6,14 +6,10 @@
 
 import type { DeviceDescriptor, ConfigDescriptor, BosDescriptor } from './descriptors';
 import type { ExtendedDevice } from './device';
+import { EventListeners } from './typed-events';
 
 const usb = require('bindings')('usb_bindings');
 module.exports = usb;
-
-export declare interface EventListeners<T> {
-    newListener: keyof T;
-    removeListener: keyof T;
-}
 
 export declare interface DeviceEvents extends EventListeners<DeviceEvents> {
     attach: ExtendedDevice;
