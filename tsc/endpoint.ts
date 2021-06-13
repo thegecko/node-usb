@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
-import { LibUSBException, LIBUSB_TRANSFER_CANCELLED, Transfer } from '../build/Release/usb_bindings';
+import { LibUSBException, LIBUSB_TRANSFER_CANCELLED, Transfer } from './bindings';
 import { EndpointDescriptor } from './descriptors';
-import { Device } from './device';
+import { ExtendedDevice } from './device';
 
 const isBuffer = (obj: any): obj is Uint8Array => obj && obj instanceof Uint8Array;
 
@@ -21,7 +21,7 @@ export abstract class Endpoint extends EventEmitter {
     /** Object with fields from the endpoint descriptor -- see libusb documentation or USB spec. */
     public descriptor: EndpointDescriptor;
 
-    constructor(protected device: Device, descriptor: EndpointDescriptor) {
+    constructor(protected device: ExtendedDevice, descriptor: EndpointDescriptor) {
         super();
         this.descriptor = descriptor
         this.address = descriptor.bEndpointAddress
@@ -58,7 +58,7 @@ export class InEndpoint extends Endpoint {
     /** Endpoint direction. */
     public direction: 'in' | 'out' = 'in';
 
-    constructor(device: Device, descriptor: EndpointDescriptor) {
+    constructor(device: ExtendedDevice, descriptor: EndpointDescriptor) {
         super(device, descriptor);
     }
 
@@ -187,7 +187,7 @@ export class OutEndpoint extends Endpoint {
     /** Endpoint direction. */
     public direction: 'in' | 'out' = 'out';
 
-    constructor(device: Device, descriptor: EndpointDescriptor) {
+    constructor(device: ExtendedDevice, descriptor: EndpointDescriptor) {
         super(device, descriptor);
     }
 

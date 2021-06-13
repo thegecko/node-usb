@@ -6,7 +6,7 @@ if typeof gc is 'function'
 	# running with --expose-gc, do a sweep between tests so valgrind blames the right one
 	afterEach -> gc()
 
-describe 'Module', ->
+describe 'USB Module', ->
 	it 'should describe basic constants', ->
 		assert.notEqual(usb, undefined, "usb must be undefined")
 		assert.ok((usb.LIBUSB_CLASS_PER_INTERFACE != undefined), "Constants must be described")

@@ -6,7 +6,7 @@ if typeof gc is 'function'
 	# running with --expose-gc, do a sweep between tests so valgrind blames the right one
 	afterEach -> gc()
 
-describe 'Module', ->
+describe 'WebUSB Module', ->
 	it 'should describe basic constants', ->
 		assert.notEqual(webusb, undefined, "webusb must be undefined")
 

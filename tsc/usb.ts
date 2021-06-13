@@ -1,7 +1,7 @@
 import { promisify } from 'util';
 import { EventEmitter } from 'events';
-import { Device } from './device';
-import * as usb from '../build/Release/usb_bindings';
+import { ExtendedDevice } from './device';
+import * as usb from './bindings';
 
 if (usb.INIT_ERROR) {
 	console.warn('Failed to initialize libusb.');
@@ -9,8 +9,8 @@ if (usb.INIT_ERROR) {
 
 Object.setPrototypeOf(usb, EventEmitter.prototype);
 
-Object.getOwnPropertyNames(Device.prototype).forEach(name => {
-	Object.defineProperty(usb.Device.prototype, name, Object.getOwnPropertyDescriptor(Device.prototype, name) || Object.create(null));
+Object.getOwnPropertyNames(ExtendedDevice.prototype).forEach(name => {
+	Object.defineProperty(usb.Device.prototype, name, Object.getOwnPropertyDescriptor(ExtendedDevice.prototype, name) || Object.create(null));
 });
 
 usb.on('newListener', event => {
@@ -38,7 +38,7 @@ usb.on('removeListener', event => {
  * @param vid
  * @param pid
  */
-const findByIds = (vid: number, pid: number): Device | undefined => {
+const findByIds = (vid: number, pid: number): ExtendedDevice | undefined => {
 	const devices = usb.getDeviceList();
 	return devices.find(item => item.deviceDescriptor.idVendor === vid && item.deviceDescriptor.idProduct === pid);
 };
@@ -47,7 +47,7 @@ const findByIds = (vid: number, pid: number): Device | undefined => {
  * Convenience method to get the device with the specified serial number, or `undefined` if no such device is present.
  * @param serialNumber
  */
-const findBySerialNumber = async (serialNumber: string): Promise<Device | undefined> => {
+const findBySerialNumber = async (serialNumber: string): Promise<ExtendedDevice | undefined> => {
 	const devices = usb.getDeviceList();
 
 	for (const device of devices) {

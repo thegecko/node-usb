@@ -1,7 +1,7 @@
-import { LibUSBException, LIBUSB_ENDPOINT_IN } from '../build/Release/usb_bindings';
+import { LibUSBException, LIBUSB_ENDPOINT_IN } from './bindings';
 import { InterfaceDescriptor } from "./descriptors";
 import { Endpoint, InEndpoint, OutEndpoint } from "./endpoint";
-import { Device } from './device';
+import { ExtendedDevice } from './device';
 
 export class Interface {
     /** Integer interface number. */
@@ -16,7 +16,7 @@ export class Interface {
     /** List of endpoints on this interface: InEndpoint and OutEndpoint objects. */
     public endpoints!: Endpoint[];
   
-    constructor(protected device: Device, protected id: number) {
+    constructor(protected device: ExtendedDevice, protected id: number) {
         this.refresh();
     }
 

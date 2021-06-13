@@ -1,4 +1,4 @@
-import { EventEmitter } from "events";
+import { EventEmitter } from 'events';
 
 export class TypedEventTarget<T extends { [key: string]: Event }> implements EventTarget {
     private emitter = new EventEmitter();

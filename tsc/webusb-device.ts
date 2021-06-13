@@ -1,6 +1,6 @@
 import { promisify } from 'util';
 import { Endpoint, InEndpoint, OutEndpoint } from './endpoint';
-import { Device } from './device';
+import { ExtendedDevice } from './device';
 import {
     LIBUSB_ENDPOINT_IN,
     LIBUSB_ENDPOINT_OUT,
@@ -65,7 +65,7 @@ class Mutex {
  * Wrapper to make a node-usb device look like a webusb device
  */
 export class WebUSBDevice implements USBDevice {
-    public static async createInstance(device: Device): Promise<WebUSBDevice> {
+    public static async createInstance(device: ExtendedDevice): Promise<WebUSBDevice> {
         const instance = new WebUSBDevice(device);
         await instance.initialise();
         return instance;
@@ -90,7 +90,7 @@ export class WebUSBDevice implements USBDevice {
 
     private deviceMutex = new Mutex();
 
-    private constructor(private device: Device) {
+    private constructor(private device: ExtendedDevice) {
         const usbVersion = this.decodeVersion(device.deviceDescriptor.bcdUSB);
         this.usbVersionMajor = usbVersion.major;
         this.usbVersionMinor = usbVersion.minor;
