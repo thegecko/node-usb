@@ -1,7 +1,7 @@
 import { promisify } from 'util';
 import { Endpoint, InEndpoint, OutEndpoint } from './endpoint';
+import { Device } from './device';
 import {
-    Device,
     LIBUSB_ENDPOINT_IN,
     LIBUSB_ENDPOINT_OUT,
     LIBUSB_RECIPIENT_DEVICE,
@@ -109,6 +109,9 @@ export class WebUSBDevice implements USBDevice {
     }
 
     public get configuration(): USBConfiguration | undefined {
+        if (!this.device.configDescriptor) {
+            return undefined;
+        }
         const currentConfiguration = this.device.configDescriptor.bConfigurationValue;
         return this.configurations.find(configuration => configuration.configurationValue === currentConfiguration);
     }
@@ -170,7 +173,7 @@ export class WebUSBDevice implements USBDevice {
         try {
             await this.deviceMutex.lock();
 
-            if (!this.opened) {
+            if (!this.opened || !this.device.configDescriptor) {
                 throw new Error('selectConfiguration error: invalid state');
             }
 

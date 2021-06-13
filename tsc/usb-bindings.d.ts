@@ -6,57 +6,44 @@
 
 declare type DeviceDescriptor = import('./descriptors').DeviceDescriptor;
 declare type ConfigDescriptor = import('./descriptors').ConfigDescriptor;
-declare type CapabilityDescriptor = import('./descriptors').CapabilityDescriptor;
 declare type BosDescriptor = import('./descriptors').BosDescriptor;
-declare type Interface = import('./interface').Interface;
-declare type Capability = import('./capability').Capability;
+declare type ExtendedDevice = import('./device').Device;
 
 declare module '*usb_bindings' {
 
-    interface events {
-        attach: Device;
-        detach: Device;
+    type EventListeners = 'newListener' | 'removeListener';
+
+    interface DeviceEvents {
+        attach: ExtendedDevice;
+        detach: ExtendedDevice;
     }
-    
-    export function _enableHotplugEvents(): void;
-    export function _disableHotplugEvents(): void;
 
-    export function addListener<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
-    export function addListener<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
-    export function removeListener<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
-    export function removeListener<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
-    export function on<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
-    export function on<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
-    export function off<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
-    export function off<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
-    export function once<K extends keyof events>(event: K, listener: (arg: events[K]) => void): void;
-    export function once<K extends keyof events>(event: 'newListener' | 'removeListener', listener: (event: K, listener: (arg: events[K]) => void) => void): void;
-    export function listeners<K extends keyof events>(event: K): Function[];
-    export function rawListeners<K extends keyof events>(event: K): Function[];
-    export function removeAllListeners<K extends keyof events>(event?: K): void;
-    export function emit<K extends keyof events>(event: K, arg: events[K]): boolean;
-    export function listenerCount<K extends keyof events>(event: K): number;
-
-    export const INIT_ERROR: number;
-    export let webusb: USB;
-
-    /**
-     * Convenience method to get the first device with the specified VID and PID, or `undefined` if no such device is present.
-     * @param vid
-     * @param pid
-     */
-    export function findByIds(vid: number, pid: number): Device | undefined;
-
-    /**
-     * Convenience method to get the device with the specified serial number, or `undefined` if no such device is present.
-     * @param serialNumber
-     */
-    export function findBySerialNumber(serialNumber: string): Promise<Device | undefined>;
+    export function addListener<K extends keyof DeviceEvents>(event: K, listener: (arg: DeviceEvents[K]) => void): void;
+    export function addListener<K extends keyof DeviceEvents>(event: EventListeners, listener: (event: K, listener: (arg: DeviceEvents[K]) => void) => void): void;
+    export function removeListener<K extends keyof DeviceEvents>(event: K, listener: (arg: DeviceEvents[K]) => void): void;
+    export function removeListener<K extends keyof DeviceEvents>(event: EventListeners, listener: (event: K, listener: (arg: DeviceEvents[K]) => void) => void): void;
+    export function on<K extends keyof DeviceEvents>(event: K, listener: (arg: DeviceEvents[K]) => void): void;
+    export function on<K extends keyof DeviceEvents>(event: EventListeners, listener: (event: K, listener: (arg: DeviceEvents[K]) => void) => void): void;
+    export function off<K extends keyof DeviceEvents>(event: K, listener: (arg: DeviceEvents[K]) => void): void;
+    export function off<K extends keyof DeviceEvents>(event: EventListeners, listener: (event: K, listener: (arg: DeviceEvents[K]) => void) => void): void;
+    export function once<K extends keyof DeviceEvents>(event: K, listener: (arg: DeviceEvents[K]) => void): void;
+    export function once<K extends keyof DeviceEvents>(event: EventListeners, listener: (event: K, listener: (arg: DeviceEvents[K]) => void) => void): void;
+    export function listeners<K extends keyof DeviceEvents>(event: K): Function[];
+    export function rawListeners<K extends keyof DeviceEvents>(event: K): Function[];
+    export function removeAllListeners<K extends keyof DeviceEvents>(event?: K): void;
+    export function emit<K extends keyof DeviceEvents>(event: K, arg: DeviceEvents[K]): boolean;
+    export function listenerCount<K extends keyof DeviceEvents>(event: K): number;
 
     /**
      * Return a list of `Device` objects for the USB devices attached to the system.
      */
-    export function getDeviceList(): Device[];
+    export function getDeviceList(): ExtendedDevice[];
+
+    export const INIT_ERROR: number;
+
+    export class LibUSBException extends Error {
+        errno: number;
+    }
 
     /**
      * Set the libusb debug level (between 0 and 4)
@@ -64,9 +51,8 @@ declare module '*usb_bindings' {
      */
     export function setDebugLevel(level: number): void;
 
-    export class LibUSBException extends Error {
-        errno: number;
-    }
+    export function _enableHotplugEvents(): void;
+    export function _disableHotplugEvents(): void;
 
     /** Represents a USB transfer */
     export class Transfer {
@@ -89,9 +75,6 @@ declare module '*usb_bindings' {
 
     /** Represents a USB device. */
     export class Device {
-        /** Timeout in milliseconds to use for control transfers. */
-        timeout: number;
-
         /** Integer USB device number */
         busNumber: number;
 
@@ -103,18 +86,6 @@ declare module '*usb_bindings' {
 
         /** Object with properties for the fields of the device descriptor. */
         deviceDescriptor: DeviceDescriptor;
-
-        /** Object with properties for the fields of the active configuration descriptor. */
-        configDescriptor: ConfigDescriptor;
-
-        /** Contains all config descriptors of the device (same structure as .configDescriptor above) */
-        allConfigDescriptors: ConfigDescriptor[];
-
-        /** Contains the parent of the device, such as a hub. If there is no parent this property is set to `null`. */
-        parent: Device;
-
-        /** List of Interface objects for the interfaces of the default configuration of the device. */
-        interfaces?: Interface[];
 
         _bosDescriptor?: BosDescriptor;
 
@@ -131,80 +102,6 @@ declare module '*usb_bindings' {
         __detachKernelDriver(addr: number): void;
         __attachKernelDriver(addr: number): void;
         __isKernelDriverActive(addr: number): boolean;
-
-        /**
-         * Open the device.
-         * @param defaultConfig
-         */
-        open(defaultConfig?: boolean): void;
-
-        /**
-         * Close the device.
-         *
-         * The device must be open to use this method.
-         */
-        close(): void;
-
-        /**
-         * Return the interface with the specified interface number.
-         *
-         * The device must be open to use this method.
-         * @param addr
-         */
-        interface(addr: number): Interface;
-
-        /**
-         * Perform a control transfer with `libusb_control_transfer`.
-         *
-         * Parameter `data_or_length` can be an integer length for an IN transfer, or a `Buffer` for an OUT transfer. The type must match the direction specified in the MSB of bmRequestType.
-         *
-         * The `data` parameter of the callback is always undefined for OUT transfers, or will be passed a Buffer for IN transfers.
-         *
-         * The device must be open to use this method.
-         * @param bmRequestType
-         * @param bRequest
-         * @param wValue
-         * @param wIndex
-         * @param data_or_length
-         * @param callback
-         */
-        controlTransfer(bmRequestType: number, bRequest: number, wValue: number, wIndex: number, data_or_length: number | Buffer,
-            callback?: (error: undefined | LibUSBException, buffer?: Buffer) => void): Device;
-
-        /**
-        * Perform a control transfer to retrieve a string descriptor
-        *
-        * The device must be open to use this method.
-        * @param desc_index
-        * @param callback
-        */
-        getStringDescriptor(desc_index: number, callback: (error: undefined | LibUSBException, data?: string) => void): void;
-
-        /**
-        * Perform a control transfer to retrieve an object with properties for the fields of the Binary Object Store descriptor.
-        *
-        * The device must be open to use this method.
-        * @param callback
-        */
-        getBosDescriptor(callback: (error: undefined | LibUSBException, descriptor?: BosDescriptor) => void): void;
-
-        /**
-        * Retrieve a list of Capability objects for the Binary Object Store capabilities of the device.
-        *
-        * The device must be open to use this method.
-        * @param callback
-        */
-        getCapabilities(callback: (error: undefined | LibUSBException, capabilities?: Capability[]) => void): void;
-
-        /**
-        * Set the device configuration to something other than the default (0). To use this, first call `.open(false)` (which tells it not to auto configure),
-        * then before claiming an interface, call this method.
-        *
-        * The device must be open to use this method.
-        * @param desired
-        * @param callback
-        */
-        setConfiguration(desired: number, callback?: (error: undefined | LibUSBException) => void): void;
 
         /**
         * Performs a reset of the device. Callback is called when complete.

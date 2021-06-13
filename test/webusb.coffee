@@ -91,6 +91,3 @@ describe 'Device access', ->
 
 #  Promise<USBInTransferResult> transferIn(octet endpointNumber, unsigned long length);
 #  Promise<USBOutTransferResult> transferOut(octet endpointNumber, BufferSource data);
-
-#  Promise<undefined> clearHalt(USBDirection direction, octet endpointNumber);
-#  Promise<undefined> reset();

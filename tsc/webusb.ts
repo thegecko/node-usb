@@ -1,5 +1,6 @@
-import { EventDispatcher, TypedDispatcher } from './event-dispatcher';
-import { Device, getDeviceList } from './usb';
+import { TypedEventTarget } from './typed-events';
+import { getDeviceList } from './usb';
+import { Device } from './device';
 import { WebUSBDevice } from './webusb-device';
 
 /**
@@ -15,7 +16,7 @@ export interface USBOptions {
 /**
  * @hidden
  */
-export interface USBEvents {
+export type USBEvents = {
     /**
      * USBDevice connected event
      */
@@ -24,9 +25,9 @@ export interface USBEvents {
      * USBDevice disconnected event
      */
     disconnect: USBConnectionEvent;
-}
+};
 
-export class WebUSB extends (EventDispatcher as new() => TypedDispatcher<USBEvents>) implements USB {
+export class WebUSB extends TypedEventTarget<USBEvents> implements USB {
 
     private allowedDevices: Array<USBDevice> = [];
 
@@ -35,11 +36,11 @@ export class WebUSB extends (EventDispatcher as new() => TypedDispatcher<USBEven
     }
 
     public set onconnect(listener: (event: USBConnectionEvent) => void) {
-        this.addListener('connect', listener);
+        this.addEventListener('connect', listener);
     }
 
     public set ondisconnect(listener: (event: USBConnectionEvent) => void) {
-        this.addListener('disconnect', listener);
+        this.addEventListener('disconnect', listener);
     }
 
     /**

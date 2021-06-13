@@ -1,4 +1,5 @@
-import type { Device } from '../build/Release/usb_bindings';
+import type { Device } from './device';
+import { CapabilityDescriptor } from './descriptors';
 
 export class Capability {
     /** Object with fields from the capability descriptor -- see libusb documentation or USB spec. */

@@ -1,6 +1,7 @@
-import { Device, LibUSBException, LIBUSB_ENDPOINT_IN } from '../build/Release/usb_bindings';
+import { LibUSBException, LIBUSB_ENDPOINT_IN } from '../build/Release/usb_bindings';
 import { InterfaceDescriptor } from "./descriptors";
 import { Endpoint, InEndpoint, OutEndpoint } from "./endpoint";
+import { Device } from './device';
 
 export class Interface {
     /** Integer interface number. */
@@ -20,6 +21,10 @@ export class Interface {
     }
 
     protected refresh() {
+        if (!this.device.configDescriptor) {
+            return;
+        }
+
         this.descriptor = this.device.configDescriptor.interfaces[this.id][this.altSetting]
         this.interfaceNumber = this.descriptor.bInterfaceNumber
         this.endpoints = []

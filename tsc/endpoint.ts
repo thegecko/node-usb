@@ -1,7 +1,9 @@
 import { EventEmitter } from 'events';
-import { Device, LibUSBException, LIBUSB_TRANSFER_CANCELLED, Transfer } from '../build/Release/usb_bindings';
+import { LibUSBException, LIBUSB_TRANSFER_CANCELLED, Transfer } from '../build/Release/usb_bindings';
 import { EndpointDescriptor } from './descriptors';
-import { isBuffer } from './util';
+import { Device } from './device';
+
+const isBuffer = (obj: any): obj is Uint8Array => obj && obj instanceof Uint8Array;
 
 /** Common base for InEndpoint and OutEndpoint. */
 export abstract class Endpoint extends EventEmitter {

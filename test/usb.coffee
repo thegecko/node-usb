@@ -36,7 +36,6 @@ describe 'findByIds', ->
 		dev = usb.findByIds(0x59e3, 0x0a23)
 		assert.ok(dev, "Demo device is not attached")
 
-
 describe 'Device', ->
 	device = null
 	before ->
@@ -157,7 +156,6 @@ describe 'Device', ->
 				inEndpoint.on 'end', ->
 					#console.log("Stream stopped")
 					done()
-
 
 		describe 'OUT endpoint', ->
 			outEndpoint = null
